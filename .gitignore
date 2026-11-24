@@ -13,3 +13,6 @@ src/main/local-tools.js
 # local editor / tooling config
 .claude/
 src/main/system-batteries.exe
+
+# compiled from native/AudioEngine.cs by scripts/build-batteries.js
+native/AudioEngine.exe

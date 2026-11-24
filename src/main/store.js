@@ -4,12 +4,12 @@ const Store = require('electron-store');
 // by an older version always gains any newly-added keys.
 const DEFAULT_SETTINGS = {
   pollIntervalSec: 60,
-  theme: 'system',          // 'system' | 'light' | 'dark'
+  theme: 'dark',            // 'system' | 'light' | 'dark' (CYL: dark by default)
   density: 'detailed',      // 'detailed' | 'compact'
   sortMode: 'urgent',       // 'urgent' | 'manual'
   reduceMotion: false,      // disable all UI animations/transitions
   notifyEnabled: true,
-  language: 'system',       // 'system' follows Windows; or en, es, zh, he
+  language: 'pt',           // 'system' follows Windows; or en, es, pt, zh, he
   notifyThreshold: 20,      // notify when battery drops below this %
   notifyCharging: true,     // notify when a device starts charging
   notifyCharged: false,     // notify when a device finishes charging
@@ -23,7 +23,7 @@ const DEFAULT_SETTINGS = {
 };
 
 const store = new Store({
-  name: 'battery-hub',
+  name: 'cyl-audio-hub',
   defaults: {
     devices: {}, // id -> { id, product, manufacturer, driverId, profile, customName, order, hidden, lastReading, lastReadingAt, lastError }
     settings: { ...DEFAULT_SETTINGS },
@@ -104,8 +104,16 @@ function getPollIntervalSec() {
   return getSettings().pollIntervalSec;
 }
 
+// ---- CYL Audio Hub sections (validated by their own modules before they are saved) ----
+const getAudio = () => store.get('audio');
+const setAudio = (value) => store.set('audio', value);
+const getBinds = () => store.get('binds');
+const setBinds = (value) => store.set('binds', value);
+const storePath = () => store.path;
+
 module.exports = {
   getDevices, upsertDevice, removeDevice, mergeDevices, reorderDevices,
   getSettings, getSetting, setSettings,
   getPollIntervalSec,
+  getAudio, setAudio, getBinds, setBinds, storePath,
 };

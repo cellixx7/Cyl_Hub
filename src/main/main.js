@@ -1,7 +1,24 @@
-const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, net } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, net, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { autoUpdater } = require('electron-updater');
+const BOOT_AT = Date.now();
+
+// ---- CYL Audio Hub identity (must run before anything reads userData) ----
+// Own data folder, so it never mixes with an installed Battery Hub. The first start copies (never
+// moves) Battery Hub's saved devices and settings, so nothing configured there is lost and Battery
+// Hub itself keeps working if it is still installed.
+const APP_NAME = 'CYL Audio Hub';
+const LEGACY_DATA = path.join(app.getPath('appData'), 'battery-hub');
+app.setName(APP_NAME);
+app.setPath('userData', path.join(app.getPath('appData'), APP_NAME));
+try {
+  const target = path.join(app.getPath('userData'), 'cyl-audio-hub.json');
+  const legacy = path.join(LEGACY_DATA, 'battery-hub.json');
+  if (!fs.existsSync(target) && fs.existsSync(legacy)) {
+    fs.mkdirSync(app.getPath('userData'), { recursive: true });
+    fs.copyFileSync(legacy, target);
+  }
+} catch (_) {}
 
 // ---- Windows stability switches (must run before app 'ready') ----
 // This app lives in the tray and hides/shows its window constantly. Chromium's native
@@ -15,7 +32,8 @@ app.disableHardwareAcceleration();
 // ---- crash logging & resilience ----
 // Everything the app logs (and any fatal error) goes to a file next to the settings so
 // crashes leave a trail instead of a window that just vanishes.
-const LOG_FILE = path.join(app.getPath('userData'), 'battery-hub.log');
+fs.mkdirSync(app.getPath('userData'), { recursive: true });
+const LOG_FILE = path.join(app.getPath('userData'), 'cyl-audio-hub.log');
 // Keep the log from growing for ever: past 1 MB, keep the newest quarter.
 try {
   if (fs.statSync(LOG_FILE).size > 1024 * 1024) {
@@ -36,7 +54,7 @@ process.on('unhandledRejection', (reason) => logLine('ERROR', `unhandledRejectio
 Menu.setApplicationMenu(null);
 // Required on Windows for toast notifications to display. Without a registered Start-menu
 // shortcut Windows shows this string as the toast's app name, so keep it human-readable.
-app.setAppUserModelId('Battery Hub');
+app.setAppUserModelId(APP_NAME);
 
 const { detectDriver } = require('./hid/drivers');
 const hidClient = require('./hid/hid-client');
@@ -47,6 +65,7 @@ const flyout = require('./flyout');
 const system = require('./system-batteries');
 const diagnostics = require('./diagnostics');
 const notifier = require('./notifier');
+const cyl = require('./cyl');
 const { offLabel } = require('../renderer/estimate'); // shared with the window, so the tray says the same
 
 const ICON = path.join(__dirname, '..', '..', 'assets', 'icon.png');
@@ -55,7 +74,6 @@ let mainWindow = null;
 // its page alone holds about 100 MB. Reopening after that rebuilds it in about half a second.
 const FREE_WINDOW_MS = 30 * 1000;
 let freeWindowTimer = null;
-let downloadedUpdate = null; // told again to a rebuilt window, so its Restart & install still shows
 let isQuitting = false;
 
 // Single instance — a second launch just focuses the running window. Crucially we
@@ -81,6 +99,18 @@ function applyTheme() {
 function applyLoginItem() {
   const openAtLogin = !!store.getSetting('launchAtLogin');
   const startMinimized = !!store.getSetting('startMinimized');
+  const devArgs = app.isPackaged ? [] : [app.getAppPath()];
+  // Before the rename this app started with Windows as "Battery Hub" (its own Run entry, pointing
+  // at this same folder). Remove only that entry, once, so the PC doesn't start two copies.
+  if (!store.getSetting('legacyLoginCleared')) {
+    try {
+      if (app.getLoginItemSettings({ name: 'Battery Hub', args: devArgs }).openAtLogin) {
+        app.setLoginItemSettings({ openAtLogin: false, name: 'Battery Hub', args: devArgs });
+        logLine('INFO', 'removed the old "Battery Hub" startup entry of this app');
+      }
+    } catch (_) {}
+    store.setSettings({ legacyLoginCleared: true });
+  }
   app.setLoginItemSettings({
     openAtLogin,
     // Run from source (electron.exe), Windows must also be told which app folder to open.
@@ -94,7 +124,7 @@ function broadcast(deviceState) {
     mainWindow.webContents.send('battery-update', deviceState);
   }
   try { notifier.check(deviceState); } catch (e) { logLine('ERROR', `notifier failed: ${e && e.stack || e}`); }
-  if (store.getSetting('trayEnabled')) {
+  {
     const reading = deviceState.lastReading;
     try {
       tray.updateDevice(deviceState.id, {
@@ -114,6 +144,18 @@ function broadcast(deviceState) {
 
 function restartPoller() {
   poller.restart(broadcast);
+}
+
+function toggleWindow() {
+  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized()) mainWindow.close();
+  else showWindow();
+}
+
+function showSettings() {
+  showWindow();
+  const go = () => mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents.send('cyl-navigate', 'settings');
+  if (mainWindow.webContents.isLoading()) mainWindow.webContents.once('did-finish-load', go);
+  else go();
 }
 
 function showWindow() {
@@ -177,9 +219,9 @@ function createWindow(forceShow) {
   mainWindow.once('ready-to-show', () => {
     roundWindowCorners(mainWindow);
     if (!startMinimized) mainWindow.show();
+    if (process.env.CYL_BENCH) logLine('BENCH', `window ready-to-show ${Date.now() - BOOT_AT} ms after process start`);
   });
   mainWindow.webContents.on('did-finish-load', () => {
-    if (downloadedUpdate) mainWindow.webContents.send('update-event', downloadedUpdate);
   });
   mainWindow.on('closed', () => { mainWindow = null; });
 
@@ -190,7 +232,7 @@ function createWindow(forceShow) {
   // Close-to-tray: hide instead of quitting, unless the user really quit. Blur first so no
   // text control still owns the Windows input (TSF) context when the window vanishes.
   mainWindow.on('close', (e) => {
-    if (!isQuitting && store.getSetting('closeToTray') && store.getSetting('trayEnabled')) {
+    if (!isQuitting && store.getSetting('closeToTray')) {
       e.preventDefault();
       try { if (!mainWindow.webContents.isDestroyed()) mainWindow.blurWebView(); } catch (_) {}
       mainWindow.hide();
@@ -207,9 +249,10 @@ function createWindow(forceShow) {
 
 function quitApp() {
   isQuitting = true;
+  cyl.shutdown();
   flyout.destroy();
   system.stopWatching();
-  tray.destroyAll();
+  tray.destroyEverything();
   poller.stop();
   hidClient.stop();
   app.quit();
@@ -230,16 +273,38 @@ app.whenReady().then(() => {
   logLine('INFO', `app ready (v${app.getVersion()}) — logging to ${LOG_FILE}`);
   applyTheme();
   applyLoginItem();
-  tray.setHandlers(showWindow, quitApp, (bounds) => flyout.toggle(bounds, tray.list()));
+  // Only the app's own window may use the microphone (the mic test and level meter); every other
+  // permission a page could ask for is refused.
+  session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => {
+    const own = (details.requestingUrl || '').startsWith('file://');
+    const audioOnly = permission === 'media' && (!details.mediaTypes || details.mediaTypes.every((t) => t === 'audio'));
+    cb(own && (audioOnly || permission === 'clipboard-sanitized-write'));
+  });
+  session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => (permission === 'media' || permission === 'clipboard-sanitized-write') && String(origin || '').startsWith('file://'));
+
+  const ctx = cyl.init({
+    log: logLine,
+    getWindow: () => mainWindow,
+    toggleWindow,
+    showWindow,
+    showSettings,
+    hidClient,
+    trayList: () => tray.list(),
+  });
+  const tooltip = () => {
+    const a = ctx.audio.get();
+    return `CYL Audio Hub — ${a.profiles[a.activeProfile].name}${a.eqEnabled ? '' : ' (EQ desligado)'}`;
+  };
+  tray.setHandlers(showWindow, quitApp, (bounds) => flyout.toggle(bounds, tray.list()), cyl.trayMenu, tooltip);
+  tray.setPerDeviceIcons(store.getSetting('trayEnabled'));
   tray.setMode(store.getSetting('trayMode'));
-  // The installer opens the window whatever the startup setting. Started hidden, there is no window
-  // until it is opened from the tray.
-  // Without tray icons a hidden start would leave the app running with nothing to open it from.
-  const startHidden = !process.argv.includes('--show') && store.getSetting('trayEnabled')
+  ctx.audio.events.on('changed', () => tray.refreshMain());
+  // Started hidden, there is no window until it is opened from the tray icon, which always exists.
+  const startHidden = !process.argv.includes('--show')
     && (store.getSetting('startMinimized') || process.argv.includes('--hidden'));
   if (!startHidden) createWindow(true);
   flyout.prepare(roundWindowCorners);
-  scheduleUpdateChecks();
+  if (process.env.CYL_BENCH) logLine('BENCH', `app ready ${Date.now() - BOOT_AT} ms after process start`);
   poller.setCardsChangedHandler((droppedId) => {
     if (droppedId) {
       notifier.reset(droppedId);
@@ -371,35 +436,16 @@ ipcMain.handle('settings:set', (evt, patch) => {
   if ('theme' in patch) applyTheme();
   if ('launchAtLogin' in patch || 'startMinimized' in patch) applyLoginItem();
   if ('pollIntervalSec' in patch) restartPoller();
-  if ('trayEnabled' in patch && !patch.trayEnabled) tray.destroyAll();
-  if ('trayEnabled' in patch && patch.trayEnabled) restartPoller();
-  if ('trayMode' in patch) {
-    tray.setMode(patch.trayMode);
-    if (!after.trayEnabled) tray.destroyAll(); // switching mode rebuilds icons; keep them off
-  }
+  if ('trayEnabled' in patch) tray.setPerDeviceIcons(patch.trayEnabled);
+  if ('trayMode' in patch) tray.setMode(patch.trayMode);
 
   return after;
 });
 
-// ---- IPC: in-app auto-update (electron-updater) ----
-// Downloads the update in the background (differential via blockmap — not the whole exe)
-// straight from the public GitHub release, then installs it on restart.
-
-autoUpdater.autoDownload = true;           // start downloading as soon as an update is found
-autoUpdater.autoInstallOnAppQuit = true;   // also install silently if the user just quits
-autoUpdater.logger = { info: (m) => logLine('INFO', `updater: ${m}`), warn: (m) => logLine('INFO', `updater: ${m}`), error: (m) => logLine('ERROR', `updater: ${m}`), debug: () => {} };
-
-function sendUpdate(payload) {
-  if (payload.status === 'downloaded') downloadedUpdate = payload;
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update-event', payload);
-}
-
-autoUpdater.on('checking-for-update', () => sendUpdate({ status: 'checking' }));
-autoUpdater.on('update-available', (info) => sendUpdate({ status: 'available', version: info && info.version }));
-autoUpdater.on('update-not-available', () => sendUpdate({ status: 'not-available', version: app.getVersion() }));
-autoUpdater.on('download-progress', (p) => sendUpdate({ status: 'downloading', percent: Math.round(p.percent || 0) }));
-autoUpdater.on('update-downloaded', (info) => sendUpdate({ status: 'downloaded', version: info && info.version }));
-autoUpdater.on('error', (err) => sendUpdate({ status: 'error', message: (err && err.message) || String(err) }));
+// ---- IPC: updates ----
+// Battery Hub's auto-update downloaded upstream Battery Hub releases from GitHub, which would have
+// replaced this build. CYL Audio Hub has no update feed: it never goes online by itself, and a new
+// version is installed by running a new installer built from this repository.
 
 ipcMain.handle('app:version', () => app.getVersion());
 
@@ -440,33 +486,8 @@ ipcMain.handle('support:device-report', async (evt, request) => {
   return diagnostics.deviceReport(supportDeps(), request, live.find((d) => d.id === request.id));
 });
 
-// The app itself looks for updates: a copy that starts hidden and lives in the tray has no window to
-// ask for it. Shortly after start, then a few times a day.
-const UPDATE_FIRST_CHECK_MS = 60 * 1000;
-const UPDATE_CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
-function scheduleUpdateChecks() {
-  if (!app.isPackaged) return;
-  // Once an update is downloaded there is nothing more to find, and a later check that fails
-  // offline would hide the Restart and install button.
-  const check = () => downloadedUpdate ? null : autoUpdater.checkForUpdates().catch((e) => logLine('INFO', `updater: check failed: ${e && e.message}`));
-  setTimeout(check, UPDATE_FIRST_CHECK_MS);
-  setInterval(check, UPDATE_CHECK_EVERY_MS);
-}
-
-ipcMain.handle('app:check-updates', async () => {
-  if (!app.isPackaged) return { status: 'dev', version: app.getVersion() };
-  try {
-    await autoUpdater.checkForUpdates(); // progress/results arrive via the 'update-event' channel
-    return { status: 'checking', version: app.getVersion() };
-  } catch (e) {
-    return { status: 'error', message: e.message, version: app.getVersion() };
-  }
-});
-
-ipcMain.handle('app:install-update', () => {
-  isQuitting = true;
-  setImmediate(() => autoUpdater.quitAndInstall());
-});
+ipcMain.handle('app:check-updates', () => ({ status: 'disabled', version: app.getVersion() }));
+ipcMain.handle('app:install-update', () => false);
 
 ipcMain.handle('app:open-external', (evt, url) => {
   if (/^https:\/\//i.test(url)) return shell.openExternal(url);
