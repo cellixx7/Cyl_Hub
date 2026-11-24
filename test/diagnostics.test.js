@@ -449,7 +449,7 @@ test('an It works report says where the battery is, with nothing private', () =>
   assert.match(url, /template=works\.yml/);
   assert.match(url, /title=\[Works\] VXE R1 Pro/);
   assert.match(url, /input report 5 on ff00:0001, byte 3 of 8, 0-100 is 0-100%/);
-  assert.match(url, /Battery Hub shows: 62%/);
+  assert.match(url, /CYL Audio Hub shows: 62%/);
   assert.ok(!/secret/.test(url));
 });
 

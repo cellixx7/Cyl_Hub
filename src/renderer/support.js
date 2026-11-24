@@ -132,7 +132,7 @@ function renderGate(gate, result, request, button, target) {
     notSent.addEventListener('click', () => sendDeviceReport(button, { ...request, notSent: true }, target));
     parts.push(
       supportText('div', 'step-title', 'You already reported this device'),
-      supportText('div', 'check-detail', `Battery Hub opened a report on it ${new Date(gate.sentAt).toLocaleDateString()}. Add anything new as a comment there.`),
+      supportText('div', 'check-detail', `CYL Audio Hub opened a report on it ${new Date(gate.sentAt).toLocaleDateString()}. Add anything new as a comment there.`),
       checkActions(find, notSent),
     );
   }
@@ -165,7 +165,7 @@ async function sendDeviceReport(button, request, target) {
 }
 
 // A scan that caught nothing usually means the device was asleep, so say how to get a better one.
-const EMPTY_SCAN_TIPS = 'Before sending: make sure the device is on and awake, and turn it off and on while the scan runs. If it also has Bluetooth, try that: Battery Hub reads Bluetooth batteries.';
+const EMPTY_SCAN_TIPS = 'Before sending: make sure the device is on and awake, and turn it off and on while the scan runs. If it also has Bluetooth, try that: CYL Audio Hub reads Bluetooth batteries.';
 
 function deviceReportCard(request) {
   const card = document.createElement('div');

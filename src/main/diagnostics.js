@@ -65,14 +65,14 @@ async function checkPackage(root, packaged) {
   const result = await packageCheck.verify(root);
   if (!result) {
     return check('package', 'Install files', 'fail', 'This install is missing its file list, so it can\'t be tested.', {
-      side: PC, fix: 'Reinstall Battery Hub.',
+      side: PC, fix: 'Reinstall CYL Audio Hub.',
     });
   }
   const bad = result.missing.length + result.changed.length;
   if (bad === 0) return check('package', 'Install files', 'ok', `All ${result.total} files match what was shipped.`, { fingerprint: result.fingerprint });
   return check('package', 'Install files', 'fail', `${bad} of ${result.total} files are missing or changed.`, {
     side: PC,
-    fix: 'Reinstall Battery Hub. If it happens again, antivirus software may be changing its files.',
+    fix: 'Reinstall CYL Audio Hub. If it happens again, antivirus software may be changing its files.',
     fingerprint: result.fingerprint,
     files: [...result.missing, ...result.changed].slice(0, 10),
   });
@@ -101,7 +101,7 @@ function checkStorage(folder) {
     if (works) return check('storage', 'Saved settings', 'ok', 'Settings can be saved and read back.');
   } catch (_) { /* reported below */ }
   return check('storage', 'Saved settings', 'fail', "Settings can't be saved.", {
-    side: PC, fix: 'Check your disk has free space and that antivirus software isn\'t blocking Battery Hub.',
+    side: PC, fix: 'Check your disk has free space and that antivirus software isn\'t blocking CYL Audio Hub.',
   });
 }
 
@@ -112,7 +112,7 @@ async function checkDeviceReader(enumerate) {
     return check('hid', 'Device reader', 'ok', `Working: found ${count(devices.length, 'device')} in ${Date.now() - started} ms.`);
   } catch (e) {
     return check('hid', 'Device reader', 'fail', "The part that talks to your devices didn't start.", {
-      side: PC, fix: 'Reinstall Battery Hub. If that doesn\'t help, antivirus software may be blocking it.', error: e.message,
+      side: PC, fix: 'Reinstall CYL Audio Hub. If that doesn\'t help, antivirus software may be blocking it.', error: e.message,
     });
   }
 }
@@ -208,7 +208,7 @@ function verdictOf(checks) {
     return { tone: 'bad', side: PC, title: 'The problem looks to be on this PC', detail: 'Try the fixes below first. They may solve it without needing support.' };
   }
   if (others.length) {
-    return { tone: 'warn', side: APP, title: 'Your install and PC look fine', detail: 'This may be a Battery Hub problem. Send a support request and we\'ll take a look.' };
+    return { tone: 'warn', side: APP, title: 'Your install and PC look fine', detail: 'This may be a CYL Audio Hub problem. Send a support request and we\'ll take a look.' };
   }
   if (softPc.length) {
     return { tone: 'warn', side: PC, title: 'Mostly fine', detail: 'One thing on this PC needs a look. See below.' };
@@ -219,7 +219,7 @@ function verdictOf(checks) {
 function formatReport({ checks, verdict, facts, errors }) {
   const lines = [
     `Verdict: ${verdict.title}`, '',
-    `Battery Hub ${facts.version}${facts.packaged ? '' : ' (from source)'}`,
+    `CYL Audio Hub ${facts.version}${facts.packaged ? '' : ' (from source)'}`,
     `Windows ${facts.windows} ${facts.arch}, Electron ${facts.electron}`,
   ];
   const pack = checks.find((c) => c.id === 'package');
@@ -410,7 +410,7 @@ function worksReport(deps, request, live) {
       device: [facts.manufacturer, facts.product].filter(Boolean).join(' '),
       connection: facts.connection,
       ids: product ? `VID_${vendor} / PID_${product}` : facts.hardware,
-      how: sanitize(`${how}\nBattery Hub shows: ${level}`),
+      how: sanitize(`${how}\nCYL Audio Hub shows: ${level}`),
       version: deps.version,
     }),
   };

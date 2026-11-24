@@ -65,6 +65,10 @@ function check(canon) {
   const mediaKey = /^(Volume|Media)/.test(key) || /^F(1[3-9]|2[0-4])$/.test(key);
   if (!mods.length && !mediaKey) return { error: 'Atalho sem modificador seria capturado em qualquer programa (inclusive no jogo). Adicione Ctrl, Alt ou Shift.' };
   if (!mods.length && mediaKey) return { warning: 'Teclas de mídia sem modificador deixam de funcionar nos outros programas enquanto o bind estiver ativo.' };
+  // On ABNT2 (and other European layouts) Ctrl+Alt is AltGr: these produce characters.
+  if (mods.length === 2 && mods.includes('Control') && mods.includes('Alt') && /^([QWE1-6C]|=|\[|\]|\/|;)$/.test(key)) {
+    return { warning: `No teclado ABNT2, Ctrl + Alt equivale ao AltGr: enquanto o bind estiver ativo, AltGr + ${key} deixa de digitar seu caractere (ex.: AltGr + Q = /, AltGr + W = ?, AltGr + 2 = ²).` };
+  }
   if (mods.length === 1 && /^([A-Z0-9]|Space|Tab|F[1-9]|F1[0-2])$/.test(key)) {
     return { warning: `${display(mods[0])} + tecla comum é usado por jogos (no Valorant, Ctrl agacha). Enquanto o bind estiver ativo o jogo não recebe essa combinação. Prefira Ctrl + Alt + tecla.` };
   }

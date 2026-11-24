@@ -1,7 +1,7 @@
 const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 52;
 
 const state = {
-  view: 'dashboard',
+  view: 'overview',
   saved: {},
   live: [],
   cardEls: new Map(),
@@ -119,7 +119,9 @@ function switchView(view) {
   if (view === 'dashboard') refreshDashboard();
   if (view === 'discover') refreshDiscover();
   if (view === 'settings') refreshSettings();
+  if (window.cylView) window.cylView(view); // CYL Audio Hub pages (cyl.js)
 }
+window.switchView = switchView;
 
 document.querySelectorAll('.nav-item[data-view]').forEach((el) => {
   el.addEventListener('click', (e) => {
@@ -980,19 +982,21 @@ async function initAbout() {
     let r;
     try { r = await window.batteryHub.checkForUpdates(); }
     catch (e) { r = { status: 'error', message: e.message }; }
-    if (r && r.status === 'dev') { if (isManual) show('Updates run automatically in the installed app', `v${r.version}`, false); resetBtn(); }
+    if (r && r.status === 'disabled') { show('Atualizações automáticas desativadas', 'O CYL Audio Hub não acessa a internet sozinho. Para atualizar, instale uma nova versão gerada a partir do projeto.', false); resetBtn(); }
+    else if (r && r.status === 'dev') { if (isManual) show('Updates run automatically in the installed app', `v${r.version}`, false); resetBtn(); }
     else if (r && r.status === 'error') { if (isManual) show("Couldn't check for updates", r.message || '', false); resetBtn(); }
     // 'checking' -> real result comes through onUpdateEvent
   }
 
   btn.addEventListener('click', () => runCheck(true));
-  runCheck(false); // silent auto-check on load
+  // No automatic check: there is no update feed (see main.js).
 }
 
 // ---------- boot ----------
 
 // Keep the "Updated Xs ago" labels ticking between polls.
 setInterval(() => {
+  if (document.hidden) return; // nothing to keep current in a hidden window
   for (const [id, card] of state.cardEls) {
     const dev = state.saved[id];
     if (dev) applyReading(card, dev);

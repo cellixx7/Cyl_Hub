@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
-<title>Battery Hub</title>
+<title>CYL Audio Hub</title>
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
     <div class="titlebar">
-      <div class="titlebar-title"><img src="app-icon.png" width="16" height="16" alt="" draggable="false" />Battery Hub</div>
+      <div class="titlebar-title"><img src="app-icon.png" width="16" height="16" alt="" draggable="false" />CYL Audio Hub</div>
       <div class="window-controls">
         <button class="wc-btn wc-min" id="win-min" title="Minimize" tabindex="-1">
           <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="4.5" width="8" height="1" rx="0.5"/></svg>
@@ -23,13 +23,29 @@
     <div class="body">
       <nav class="sidebar">
         <div class="nav-items">
-          <button class="nav-item active" data-view="dashboard">
+          <button class="nav-item active" data-view="overview">
+            <span class="nav-icon" data-cyl-icon="home" aria-hidden="true"></span>
+            <span>Visão geral</span>
+          </button>
+          <button class="nav-item" data-view="dashboard">
             <span class="nav-icon" data-icon="grid" aria-hidden="true"></span>
             <span>Devices</span>
           </button>
-          <button class="nav-item" data-view="discover">
-            <span class="nav-icon" data-icon="add" aria-hidden="true"></span>
-            <span>Add device</span>
+          <button class="nav-item" data-view="equalizer">
+            <span class="nav-icon" data-cyl-icon="eq" aria-hidden="true"></span>
+            <span>Equalizador</span>
+          </button>
+          <button class="nav-item" data-view="mic">
+            <span class="nav-icon" data-icon="mic" aria-hidden="true"></span>
+            <span>Microfone</span>
+          </button>
+          <button class="nav-item" data-view="profiles">
+            <span class="nav-icon" data-cyl-icon="layers" aria-hidden="true"></span>
+            <span>Perfis</span>
+          </button>
+          <button class="nav-item" data-view="binds">
+            <span class="nav-icon" data-icon="keyboard" aria-hidden="true"></span>
+            <span>Binds</span>
           </button>
           <button class="nav-item nav-bottom" data-view="settings">
             <span class="nav-icon" data-icon="settings" aria-hidden="true"></span>
@@ -39,11 +55,75 @@
       </nav>
 
       <main class="content">
-        <section id="view-dashboard" class="view active">
+        <!-- ============ CYL: Visão geral ============ -->
+        <section id="view-overview" class="view active">
+          <header class="view-header">
+            <div>
+              <h1>Visão geral</h1>
+              <p class="view-sub" id="ov-sub">Headset, perfil, equalizador e microfone num só lugar.</p>
+            </div>
+          </header>
+          <div class="cyl-grid">
+            <div class="cyl-card cyl-hero">
+              <div class="cyl-hero-icon" data-icon="headset"></div>
+              <div class="cyl-hero-main">
+                <div class="cyl-hero-name">Redragon Zeus Pro H510-PRO</div>
+                <div class="cyl-chips">
+                  <span class="cyl-chip" id="ov-conn">—</span>
+                  <span class="cyl-chip" id="ov-mode" hidden></span>
+                </div>
+                <div class="cyl-battery">
+                  <span class="cyl-battery-label">Bateria</span>
+                  <strong id="ov-battery">—</strong>
+                  <span class="cyl-kind" id="ov-battery-kind"></span>
+                </div>
+                <p class="cyl-muted" id="ov-battery-detail"></p>
+              </div>
+            </div>
+
+            <div class="cyl-card">
+              <div class="cyl-card-head"><h3>Perfil ativo</h3><span class="cyl-muted" id="ov-auto"></span></div>
+              <div class="cyl-profile-chips" id="ov-profiles"></div>
+            </div>
+
+            <div class="cyl-card">
+              <div class="cyl-card-head">
+                <h3>Equalizador</h3>
+                <button class="toggle" id="ov-eq" role="switch" aria-label="Equalizador"><span class="toggle-knob"></span></button>
+              </div>
+              <p class="cyl-muted" id="ov-eq-status"></p>
+            </div>
+
+            <div class="cyl-card">
+              <div class="cyl-card-head">
+                <h3>Microfone</h3>
+                <button class="btn btn-ghost" id="ov-mic">—</button>
+              </div>
+              <p class="cyl-muted" id="ov-mic-name" data-no-translate></p>
+            </div>
+
+            <div class="cyl-card cyl-wide">
+              <div class="cyl-card-head"><h3>Volume do headset</h3><strong id="ov-vol-value">—</strong></div>
+              <input type="range" class="cyl-range" id="ov-vol" min="0" max="100" step="1" aria-label="Volume do headset" />
+              <p class="cyl-muted" id="ov-out-name" data-no-translate></p>
+            </div>
+
+            <div class="cyl-card cyl-wide">
+              <div class="cyl-card-head"><h3>Baterias</h3><button class="link-btn" id="ov-devices">Ver dispositivos</button></div>
+              <div class="cyl-mini-list" id="ov-batteries"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-dashboard" class="view">
           <header class="view-header">
             <div>
               <h1>Devices</h1>
             </div>
+            <button class="btn btn-ghost" id="add-device-btn">
+              <span data-icon="add"></span>
+              <span>Add device</span>
+            </button>
             <button class="btn btn-ghost" id="refresh-btn">
               <svg class="refresh-icon" width="14" height="14" viewBox="0 0 14 14"><path d="M12 7a5 5 0 1 1-1.5-3.5 M12 1.5 V4 H9.5" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
               <span>Refresh</span>
@@ -57,6 +137,18 @@
             <button class="btn btn-ghost" id="update-banner-later">Later</button>
             <button class="btn btn-primary" id="update-banner-install">Restart and install</button>
           </div>
+          <div class="settings-group-title">Áudio</div>
+          <div class="settings-panel" id="dev-audio">
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Redragon Zeus Pro H510-PRO</span>
+                <span class="settings-hint" id="dev-h510">Verificando…</span>
+              </div>
+              <span class="cyl-chip" id="dev-h510-chip">—</span>
+            </div>
+            <div id="dev-endpoints"></div>
+          </div>
+          <div class="settings-group-title">Baterias</div>
           <div class="device-grid" id="device-grid"></div>
           <div class="hidden-bar" id="hidden-bar" hidden>
             <span id="hidden-count"></span>
@@ -95,6 +187,231 @@
           <div class="calibrate-body" id="calibrate-body"></div>
         </section>
 
+        <!-- ============ CYL: Equalizador ============ -->
+        <section id="view-equalizer" class="view">
+          <header class="view-header">
+            <div>
+              <h1>Equalizador</h1>
+              <p class="view-sub">10 bandas aplicadas pelo Equalizer APO em todo o Windows.</p>
+            </div>
+            <div class="cyl-head-actions">
+              <select class="select" id="eq-profile" aria-label="Perfil" data-no-translate></select>
+              <button class="toggle" id="eq-enabled" role="switch" aria-label="Ativar equalização"><span class="toggle-knob"></span></button>
+            </div>
+          </header>
+
+          <div class="cyl-banner" id="apo-banner" hidden></div>
+
+          <div class="cyl-card cyl-eq-card">
+            <div class="cyl-eq">
+              <div class="cyl-band cyl-preamp">
+                <output id="eq-preamp-value">0</output>
+                <input type="range" class="cyl-vrange" id="eq-preamp" min="-24" max="6" step="0.5" aria-label="Preamp" />
+                <label>Preamp</label>
+              </div>
+              <div class="cyl-bands" id="eq-bands"></div>
+            </div>
+            <svg class="cyl-curve" id="eq-curve" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+              <line x1="0" y1="20" x2="100" y2="20" class="cyl-curve-zero" />
+              <polyline id="eq-curve-line" points="" />
+            </svg>
+            <div class="cyl-eq-foot">
+              <span class="cyl-muted" id="eq-save-state">As alterações são salvas e aplicadas automaticamente.</span>
+              <span class="cyl-warn" id="eq-clip" hidden>Risco de distorção: o preamp não compensa o maior ganho.
+                <button class="link-btn" id="eq-autopreamp">Ajustar preamp</button></span>
+            </div>
+          </div>
+
+          <div class="cyl-actions">
+            <button class="btn btn-ghost" id="eq-reset">Restaurar padrão</button>
+            <button class="btn btn-ghost" id="eq-duplicate">Salvar como novo perfil</button>
+            <button class="btn btn-ghost" id="eq-rename">Renomear</button>
+            <button class="btn btn-ghost" id="eq-delete">Excluir</button>
+            <span class="cyl-spacer"></span>
+            <button class="btn btn-ghost" id="eq-import">Importar</button>
+            <button class="btn btn-ghost" id="eq-export">Exportar</button>
+          </div>
+          <p class="cyl-muted cyl-note" id="eq-note"></p>
+
+          <div class="settings-group-title">Saída</div>
+          <div class="settings-panel">
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Dispositivo equalizado</span>
+                <span class="settings-hint">A curva vale só para esta saída. Automático: o H510-PRO, ou a saída padrão.</span>
+              </div>
+              <select class="select" id="eq-target" data-no-translate></select>
+            </div>
+          </div>
+
+          <div class="settings-group-title">Equalizer APO</div>
+          <div class="settings-panel" id="apo-panel"></div>
+        </section>
+
+        <!-- ============ CYL: Microfone ============ -->
+        <section id="view-mic" class="view">
+          <header class="view-header">
+            <div>
+              <h1>Microfone</h1>
+              <p class="view-sub">Controles do Windows para o microfone usado pelo Discord e pelos jogos.</p>
+            </div>
+            <button class="btn btn-ghost" id="mic-mute">—</button>
+          </header>
+
+          <div class="settings-panel">
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Dispositivo de entrada</span>
+                <span class="settings-hint" id="mic-conn">—</span>
+              </div>
+              <select class="select" id="mic-device" data-no-translate></select>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Padrão do Windows</span>
+                <span class="settings-hint" id="mic-default-hint">—</span>
+              </div>
+              <div class="cyl-inline">
+                <button class="btn btn-ghost" id="mic-default-all">Padrão</button>
+                <button class="btn btn-ghost" id="mic-default-comm">Padrão de comunicação</button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Volume de entrada</span>
+                <span class="settings-hint">Nível do microfone no Windows (o mesmo das Configurações de som).</span>
+              </div>
+              <div class="cyl-inline cyl-range-wrap">
+                <input type="range" class="cyl-range" id="mic-volume" min="0" max="100" step="1" aria-label="Volume de entrada" />
+                <strong id="mic-volume-value">—</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group-title">Teste</div>
+          <div class="cyl-card">
+            <div class="cyl-card-head">
+              <h3>Nível de entrada</h3>
+              <div class="cyl-inline">
+                <button class="btn btn-ghost" id="mic-test-start">Iniciar teste</button>
+                <button class="btn btn-ghost" id="mic-record" disabled>Gravar 5 s</button>
+                <button class="btn btn-ghost" id="mic-play" disabled>Ouvir gravação</button>
+              </div>
+            </div>
+            <div class="cyl-meter"><div class="cyl-meter-fill" id="mic-meter"></div><div class="cyl-meter-peak" id="mic-meter-peak"></div></div>
+            <p class="cyl-muted" id="mic-test-state">O microfone só é aberto enquanto o teste estiver ativo nesta página.</p>
+            <div class="settings-row cyl-flat-row">
+              <div class="settings-label">
+                <span class="settings-title">Ouvir a própria voz</span>
+                <span class="settings-hint">Retorno pelo fone enquanto o teste estiver ativo (tem atraso; use fone para evitar microfonia).</span>
+              </div>
+              <button class="toggle" id="mic-monitor" role="switch" aria-label="Ouvir a própria voz"><span class="toggle-knob"></span></button>
+            </div>
+          </div>
+
+          <div class="settings-group-title">Filtros (Equalizer APO)</div>
+          <div class="settings-panel">
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Filtros do microfone no perfil <b id="mic-profile-name" data-no-translate></b></span>
+                <span class="settings-hint" id="mic-filters-hint">Processados pelo Equalizer APO no microfone: valem para Discord e jogos.</span>
+              </div>
+              <button class="toggle" id="mic-filters" role="switch" aria-label="Filtros do microfone"><span class="toggle-knob"></span></button>
+            </div>
+            <div class="settings-row" data-mic-dep>
+              <div class="settings-label">
+                <span class="settings-title">Corte de graves (passa-alta)</span>
+                <span class="settings-hint">Remove ruído grave (ventoinhas, batidas na mesa).</span>
+              </div>
+              <div class="stepper"><input type="number" id="mic-hp" min="20" max="300" step="10" /><span class="stepper-unit">Hz</span></div>
+            </div>
+            <div class="settings-row" data-mic-dep>
+              <div class="settings-label">
+                <span class="settings-title">Presença da voz</span>
+                <span class="settings-hint">Realce em 3,5 kHz para a voz ficar mais clara.</span>
+              </div>
+              <div class="stepper"><input type="number" id="mic-presence" min="-6" max="9" step="0.5" /><span class="stepper-unit">dB</span></div>
+            </div>
+            <div class="settings-row" data-mic-dep>
+              <div class="settings-label">
+                <span class="settings-title">Ganho digital</span>
+                <span class="settings-hint">Aplicado pelo APO depois do volume do Windows. Valores altos amplificam ruído.</span>
+              </div>
+              <div class="stepper"><input type="number" id="mic-gain" min="-12" max="20" step="0.5" /><span class="stepper-unit">dB</span></div>
+            </div>
+          </div>
+          <p class="cyl-muted cyl-note">Limitações: o driver do H510-PRO não expõe ganho/AGC de hardware nem o estado do botão de mudo do copo para o Windows; o "Volume de entrada" é o nível do endpoint do Windows. Noise gate, compressor e supressão de ruído por IA não foram incluídos: o Equalizer APO não os tem nativamente e processamento por IA contraria a meta de desempenho.</p>
+        </section>
+
+        <!-- ============ CYL: Perfis ============ -->
+        <section id="view-profiles" class="view">
+          <header class="view-header">
+            <div>
+              <h1>Perfis</h1>
+              <p class="view-sub">Cada perfil guarda sua curva de EQ, o preamp e os filtros do microfone.</p>
+            </div>
+            <div class="cyl-head-actions">
+              <button class="btn btn-ghost" id="pf-import">Importar</button>
+              <button class="btn btn-ghost" id="pf-export">Exportar todos</button>
+            </div>
+          </header>
+          <div class="list" id="pf-list"></div>
+
+          <div class="settings-group-title">Troca automática</div>
+          <div class="settings-panel">
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Trocar de perfil pelo programa aberto</span>
+                <span class="settings-hint">A cada intervalo, lê os nomes dos programas em execução (sem acessar os processos) e ativa o perfil da primeira regra que combinar. Sem combinação, volta ao perfil escolhido à mão.</span>
+              </div>
+              <button class="toggle" id="as-enabled" role="switch" aria-label="Troca automática"><span class="toggle-knob"></span></button>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Intervalo de verificação</span>
+                <span class="settings-hint">Mínimo de 5 s. Cada verificação custa poucos milissegundos.</span>
+              </div>
+              <div class="stepper"><input type="number" id="as-interval" min="5" max="300" step="5" /><span class="stepper-unit">s</span></div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Avisar ao trocar de perfil</span>
+                <span class="settings-hint">Notificação discreta do Windows (sem som) ao trocar perfil ou EQ.</span>
+              </div>
+              <button class="toggle" id="as-notify" role="switch" aria-label="Avisar ao trocar"><span class="toggle-knob"></span></button>
+            </div>
+            <div class="cyl-rules" id="as-rules"></div>
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Nova regra</span>
+                <span class="settings-hint">Nome do executável (ex.: valorant-win64-shipping, discord, spotify, chrome).</span>
+              </div>
+              <div class="cyl-inline">
+                <input class="text-input cyl-text" id="as-exe" list="as-procs" placeholder="programa" maxlength="64" data-no-translate />
+                <datalist id="as-procs"></datalist>
+                <select class="select" id="as-profile" data-no-translate></select>
+                <button class="btn btn-ghost" id="as-add">Adicionar</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ CYL: Binds ============ -->
+        <section id="view-binds" class="view">
+          <header class="view-header">
+            <div>
+              <h1>Binds</h1>
+              <p class="view-sub">Atalhos globais: funcionam com a janela fechada, sem hooks de teclado nem acesso a jogos.</p>
+            </div>
+            <div class="cyl-head-actions">
+              <button class="btn btn-ghost" id="bd-reset">Restaurar padrões</button>
+              <button class="btn btn-primary" id="bd-add">Novo bind</button>
+            </div>
+          </header>
+          <div class="cyl-binds" id="bd-list"></div>
+          <p class="cyl-muted cyl-note">Os binds usam o registro de atalhos do próprio Windows (RegisterHotKey): o app só é avisado quando a combinação exata é pressionada. Enquanto um bind está ativo, o programa em foco (inclusive o jogo) não recebe essa combinação — prefira Ctrl + Alt + tecla, que o Valorant não usa por padrão.</p>
+        </section>
+
         <section id="view-settings" class="view">
           <header class="view-header">
             <div>
@@ -118,7 +435,7 @@
             <div class="settings-row">
               <div class="settings-label">
                 <span class="settings-title">Language</span>
-                <span class="settings-hint">The language Battery Hub uses.</span>
+                <span class="settings-hint">The language CYL Audio Hub uses.</span>
               </div>
               <select class="select" data-setting="language">
                 <option value="system">System</option>
@@ -199,8 +516,8 @@
           <div class="settings-panel">
             <div class="settings-row">
               <div class="settings-label">
-                <span class="settings-title">Tray battery icons</span>
-                <span class="settings-hint">Show a taskbar icon per device with its level.</span>
+                <span class="settings-title">Ícones de bateria extras</span>
+                <span class="settings-hint">O ícone principal do CYL Audio Hub fica sempre na bandeja. No layout "Per device", mostra também um ícone por dispositivo.</span>
               </div>
               <button class="toggle" data-setting="trayEnabled" role="switch"><span class="toggle-knob"></span></button>
             </div>
@@ -228,7 +545,7 @@
             <div class="settings-row">
               <div class="settings-label">
                 <span class="settings-title">Launch at login</span>
-                <span class="settings-hint">Start Battery Hub when Windows starts.</span>
+                <span class="settings-hint">Start CYL Audio Hub when Windows starts.</span>
               </div>
               <button class="toggle" data-setting="launchAtLogin" role="switch"><span class="toggle-knob"></span></button>
             </div>
@@ -268,10 +585,10 @@
             <div class="settings-row">
               <img class="about-icon" src="watcher.png" width="56" height="56" alt="" draggable="false" />
               <div class="settings-label">
-                <span class="settings-title">Battery Hub</span>
+                <span class="settings-title">CYL Audio Hub</span>
                 <span class="settings-hint" id="app-version">Version</span>
               </div>
-              <button class="btn btn-ghost" id="check-updates-btn">Check for updates</button>
+              <button class="btn btn-ghost" id="check-updates-btn">Sobre atualizações</button>
             </div>
             <div class="settings-row" id="update-status-row" hidden>
               <div class="settings-label">
@@ -283,7 +600,7 @@
           </div>
 
           <div class="settings-footer">
-            <button class="btn btn-danger" id="quit-app-btn">Quit Battery Hub</button>
+            <button class="btn btn-danger" id="quit-app-btn">Quit CYL Audio Hub</button>
           </div>
         </section>
       </main>
@@ -411,5 +728,6 @@
   <script src="app.js"></script>
   <script src="detail.js"></script>
   <script src="support.js"></script>
+  <script src="cyl.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// Turns a piece of Battery Hub's English into the chosen language: an exact match in
+// Turns a piece of CYL Audio Hub's English into the chosen language: an exact match in
 // i18n-strings.js first, then the patterns below for text with numbers or names in it. Anything
 // unknown comes back unchanged, so a missing translation shows English rather than nothing.
 // Pure: loaded as a plain script by the windows (after i18n-strings.js) and required by the main

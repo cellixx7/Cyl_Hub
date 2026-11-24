@@ -26,6 +26,7 @@ test('check blocks reserved, Windows-key and modifier-less combinations', () => 
   assert.match(kb.check(kb.normalize('M')).error, /modificador/);
   assert.match(kb.check(null).error, /inválida/);
   assert.deepEqual(kb.check(kb.normalize('Ctrl+Alt+M')), {});
+  assert.match(kb.check(kb.normalize('Ctrl+Alt+Q')).warning, /ABNT2/);
 });
 
 test('check warns about combinations games use', () => {

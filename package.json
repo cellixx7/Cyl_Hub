@@ -1,8 +1,8 @@
 {
-  "name": "battery-hub",
-  "version": "2.0.5",
-  "description": "Live battery monitor for all your HID devices",
-  "author": "Battery Hub contributors",
+  "name": "cyl-audio-hub",
+  "version": "3.0.0",
+  "description": "Bateria, equalizador (Equalizer APO), perfis, microfone e binds globais para o Redragon H510-PRO e outros periféricos",
+  "author": "Marcelo Vaz Oliveira (CylVersion), baseado no Battery Hub e no Zeus Pro Suite",
   "main": "src/main/main.js",
   "private": true,
   "scripts": {
@@ -11,11 +11,11 @@
     "test": "node --test \"test/*.test.js\"",
     "predist": "node scripts/build-batteries.js",
     "dist": "electron-builder",
-    "installer": "node scripts/build-installer.js"
+    "installer": "node scripts/build-installer.js",
+    "bench": "node scripts/bench.js"
   },
   "dependencies": {
     "electron-store": "^8.2.0",
-    "electron-updater": "^6.8.11",
     "node-hid": "^3.1.2"
   },
   "devDependencies": {
@@ -23,24 +23,18 @@
     "electron-builder": "^26.18.0"
   },
   "build": {
-    "appId": "com.doron.batteryhub",
-    "productName": "Battery Hub",
+    "appId": "com.cyl.audiohub",
+    "productName": "CYL Audio Hub",
     "asar": false,
     "npmRebuild": false,
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "battery-hub",
-        "repo": "battery-hub"
-      }
-    ],
     "files": [
       "src/**/*",
       "assets/**/*",
       "package.json",
       "!**/node_modules/node-hid/hidapi/**",
       "!**/node_modules/node-hid/src/**",
-      "!**/node_modules/node-hid/prebuilds/!(HID-win32-x64)/**"
+      "!**/node_modules/node-hid/prebuilds/!(HID-win32-x64)/**",
+      "native/AudioEngine.exe"
     ],
     "afterPack": "scripts/after-pack.js",
     "electronLanguages": [
@@ -49,23 +43,25 @@
       "es-419",
       "zh-CN",
       "zh-TW",
-      "he"
+      "he",
+      "pt-BR"
     ],
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico"
     },
     "nsis": {
-      "artifactName": "Battery-Hub-Update-${version}.${ext}",
+      "artifactName": "CYL-Audio-Hub-Setup-${version}.${ext}",
       "oneClick": true,
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Battery Hub"
+      "shortcutName": "CYL Audio Hub"
     }
   },
   "allowScripts": {
     "electron@45.2.1": true,
     "node-hid@3.3.0": true
-  }
+  },
+  "productName": "CYL Audio Hub"
 }
