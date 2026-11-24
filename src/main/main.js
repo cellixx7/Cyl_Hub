@@ -70,7 +70,7 @@ if (!gotLock) {
 }
 app.on('second-instance', () => { if (app.isReady()) showWindow(); }); // a window can't be built before 'ready'
 
-const windowColor = () => (nativeTheme.shouldUseDarkColors ? '#1f2226' : '#eceff0');
+const windowColor = () => (nativeTheme.shouldUseDarkColors ? '#0f1020' : '#eef0fb');
 
 function applyTheme() {
   const theme = store.getSetting('theme') || 'system';

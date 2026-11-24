@@ -826,3 +826,145 @@ body.reduce-motion .nav-item:active {
   transform: none !important;
 }
 body.reduce-motion .device-card::after { display: none; } /* no cursor-tracked glare */
+
+/* ============================================================
+   Glass theme (CylVersion) — soft gradient backdrop, translucent cards,
+   violet/blue accent, rounder corners. Still no backdrop-filter: the
+   "glass" is rgba surfaces over a static gradient, so it costs nothing
+   with hardware acceleration off. Delete this block to get the stock look.
+   ============================================================ */
+:root {
+  --bg: #eef0fb;
+  --titlebar-bg: transparent;
+  --sidebar-bg: transparent;
+  --content-bg: transparent;
+  --card-bg: rgba(255, 255, 255, 0.62);
+  --card-hover-bg: rgba(255, 255, 255, 0.82);
+  --panel-bg: rgba(255, 255, 255, 0.58);
+  --panel-hover-bg: rgba(255, 255, 255, 0.8);
+  --glass-edge: rgba(255, 255, 255, 0.9);
+  --glass-edge-soft: rgba(90, 80, 160, 0.12);
+  --glass-sheen: linear-gradient(145deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 42%);
+  --specular: rgba(255, 255, 255, 0.55);
+  --sheet-bg: #f6f6fd;
+  --scrim: rgba(40, 30, 90, 0.18);
+  --ring-track: rgba(90, 80, 160, 0.12);
+  --text: #1b1a2e;
+  --text-secondary: #5c5b75;
+  --text-tertiary: #7d7b96;
+  --border: rgba(90, 80, 160, 0.1);
+  --border-strong: rgba(90, 80, 160, 0.18);
+  --accent: #6d5dfc;
+  --accent-2: #3b82f6;
+  --accent-hover: color-mix(in srgb, var(--accent) 86%, black);
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --hover-fill: rgba(109, 93, 252, 0.07);
+  --shadow-card: 0 6px 24px rgba(70, 60, 150, 0.08), 0 1px 2px rgba(70, 60, 150, 0.06);
+  --shadow-pop: 0 14px 40px rgba(70, 60, 150, 0.16);
+  --backdrop:
+    radial-gradient(900px 600px at 0% 0%, rgba(124, 108, 255, 0.22), transparent 60%),
+    radial-gradient(800px 600px at 100% 100%, rgba(59, 130, 246, 0.18), transparent 60%),
+    radial-gradient(600px 500px at 85% 5%, rgba(236, 72, 153, 0.08), transparent 60%),
+    linear-gradient(160deg, #f4f3ff 0%, #eaf0fb 100%);
+  --radius-xl: 18px;
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1020;
+    --card-bg: rgba(255, 255, 255, 0.06);
+    --card-hover-bg: rgba(255, 255, 255, 0.1);
+    --panel-bg: rgba(255, 255, 255, 0.055);
+    --panel-hover-bg: rgba(255, 255, 255, 0.095);
+    --glass-edge: rgba(255, 255, 255, 0.14);
+    --glass-edge-soft: rgba(255, 255, 255, 0.07);
+    --glass-sheen: linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 45%);
+    --specular: rgba(167, 155, 255, 0.16);
+    --sheet-bg: #181930;
+    --scrim: rgba(5, 5, 20, 0.5);
+    --ring-track: rgba(255, 255, 255, 0.1);
+    --text: #ecebff;
+    --text-secondary: #a9a8c8;
+    --text-tertiary: #75748f;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.15);
+    --accent: #8b7dff;
+    --accent-2: #60a5fa;
+    --accent-hover: color-mix(in srgb, var(--accent) 84%, white);
+    --accent-soft: color-mix(in srgb, var(--accent) 22%, transparent);
+    --hover-fill: rgba(167, 155, 255, 0.09);
+    --shadow-card: 0 8px 28px rgba(0, 0, 0, 0.28);
+    --shadow-pop: 0 16px 44px rgba(0, 0, 0, 0.45);
+    --backdrop:
+      radial-gradient(900px 620px at 0% 0%, rgba(124, 108, 255, 0.26), transparent 60%),
+      radial-gradient(800px 600px at 100% 100%, rgba(37, 99, 235, 0.22), transparent 60%),
+      radial-gradient(600px 500px at 85% 5%, rgba(236, 72, 153, 0.1), transparent 60%),
+      linear-gradient(160deg, #12122a 0%, #0c0f1f 100%);
+  }
+}
+
+html, body { background: var(--backdrop); background-color: var(--bg); }
+
+/* sidebar and content float on the backdrop instead of being solid slabs */
+.sidebar, .content { box-shadow: none; border-radius: 0; }
+.sidebar { width: 216px; padding: 10px 12px 14px; }
+.nav-item span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.content { padding: 28px 34px 48px; }
+
+.titlebar-title { font-weight: 600; letter-spacing: 0.3px; }
+
+/* nav: pill with a gradient wash instead of the left bar */
+.nav-item { border-radius: 12px; padding: 10px 14px; }
+.nav-item.active {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent-2) 10%, transparent));
+  box-shadow: inset 0 1px 0 var(--glass-edge), inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
+}
+.nav-item.active .nav-icon { color: var(--accent); }
+
+.view-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.8px; }
+
+/* buttons */
+.btn { border-radius: 999px; padding: 8px 16px; }
+.btn-icon { padding: 9px; }
+.btn-primary {
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.btn-primary:hover { background: linear-gradient(120deg, var(--accent-hover), var(--accent-2)); }
+
+/* cards */
+.device-grid { gap: 18px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.device-card { padding: 22px 16px 18px; }
+.device-card:hover {
+  transform: translateY(-3px);
+  box-shadow: inset 0 1px 0 var(--glass-edge), inset 0 0 0 1px var(--glass-edge-soft), var(--shadow-pop);
+}
+.gauge-track { stroke-width: 7; }
+.gauge-fill { stroke-width: 8; }
+.device-type-icon { border-radius: 9px; border-color: transparent; }
+.sparkline { height: 30px; }
+
+.list-item, .step-card, .settings-panel { border-radius: var(--radius-lg); }
+.menu-dropdown, .icon-picker { border-radius: 12px; }
+.menu-dropdown button { border-radius: 8px; }
+
+/* detail sheet: lift it off the backdrop */
+.sheet { border-start-start-radius: 20px; border-end-start-radius: 20px; box-shadow: inset 1px 0 0 var(--glass-edge-soft), var(--shadow-pop); }
+.sheet-icon { border-radius: 12px; }
+.chart-area { fill: var(--accent); opacity: 0.14; }
+
+/* form controls */
+.select, .stepper input, .form-row input[type="number"], .step-card .text-input { border-radius: 10px; }
+.segmented { border-radius: 999px; padding: 3px; }
+.seg-thumb { border-radius: 999px; top: 3px; height: calc(100% - 6px); }
+.segmented button { border-radius: 999px; white-space: nowrap; }
+.toggle.on { background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+.scan-bar { background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.badge { border-radius: 999px; padding: 2px 8px; }
+.update-banner { border-radius: var(--radius-lg); }
+
+.content::-webkit-scrollbar-thumb, .sheet::-webkit-scrollbar-thumb { border-radius: 999px; }
