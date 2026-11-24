@@ -243,7 +243,8 @@ function init({ log, getWindow, toggleWindow, showWindow, showSettings, hidClien
   // Re-assert our APO chain at start (no write when it is already current); skipped without APO.
   if (apo.info()) audio.applyEq().catch((e) => log('ERROR', `apo at start: ${e.message}`));
 
-  ctx = { engine, apo, audio, autoSwitch, keybinds, run, notify, showWindow, showSettings };
+  const saveBinds = (list) => { binds = kbModel.normalizeBinds(list, audio.get().profiles); store.setBinds(binds); return applyBinds(); };
+  ctx = { engine, apo, audio, autoSwitch, keybinds, run, notify, showWindow, showSettings, saveBinds };
   return ctx;
 }
 

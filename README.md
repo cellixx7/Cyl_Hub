@@ -1,3 +1,5 @@
+> **CYL Audio Hub** — esta cópia foi estendida com áudio, equalizador, perfis e binds para o Redragon H510-PRO. Documentação em PT-BR: [docs/CYL-AUDIO-HUB.md](docs/CYL-AUDIO-HUB.md). O texto abaixo é o README original do Battery Hub.
+
 <div align="center">
   <img src="assets/brand/watcher-tile.png" width="120" alt="Battery Hub" />
   <h1>Battery Hub</h1>

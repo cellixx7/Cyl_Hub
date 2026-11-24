@@ -622,17 +622,17 @@
       const sub = [`Preamp ${fmtDb(p.preamp)} dB`, p.mic && p.mic.filters ? 'filtros de microfone' : null, rules.length ? `automático: ${rules.join(', ')}` : null].filter(Boolean).join(' · ');
       info.append(title, el('div', 'list-item-sub', sub));
       const actions = el('div', 'cyl-inline');
-      if (id !== a.activeProfile) actions.appendChild(button('Ativar', 'btn btn-primary', () => guarded(() => api.activateProfile(id))));
+      if (id !== a.activeProfile) actions.appendChild(button('Ativar', 'btn btn-primary cyl-sm', () => guarded(() => api.activateProfile(id))));
       actions.append(
-        button('Editar EQ', 'btn btn-ghost', async () => { await guarded(() => api.activateProfile(id)); window.switchView('equalizer'); }),
-        button('Renomear', 'btn btn-ghost', () => rename(id)),
-        button('Duplicar', 'btn btn-ghost', () => duplicate(id)),
+        button('Editar EQ', 'btn btn-ghost cyl-sm', async () => { await guarded(() => api.activateProfile(id)); window.switchView('equalizer'); }),
+        button('Renomear', 'btn btn-ghost cyl-sm', () => rename(id)),
+        button('Duplicar', 'btn btn-ghost cyl-sm', () => duplicate(id)),
       );
-      if (p.builtin) actions.appendChild(button('Restaurar', 'btn btn-ghost', () => guarded(() => api.resetProfile(id), 'Perfil restaurado.')));
-      if (id !== 'padrao') actions.appendChild(button('Excluir', 'btn btn-ghost', () => remove(id)));
+      if (p.builtin) actions.appendChild(button('Restaurar', 'btn btn-ghost cyl-sm', () => guarded(() => api.resetProfile(id), 'Perfil restaurado.')));
+      if (id !== 'padrao') actions.appendChild(button('Excluir', 'btn btn-ghost cyl-sm', () => remove(id)));
       const move = (d) => { const o = [...a.order]; const j = idx + d; [o[idx], o[j]] = [o[j], o[idx]]; guarded(() => api.orderProfiles(o)); };
-      const up = button('↑', 'btn btn-ghost btn-icon', () => move(-1)); up.disabled = idx === 0; up.title = 'Mover para cima';
-      const down = button('↓', 'btn btn-ghost btn-icon', () => move(1)); down.disabled = idx === a.order.length - 1; down.title = 'Mover para baixo';
+      const up = button('↑', 'btn btn-ghost cyl-sm', () => move(-1)); up.disabled = idx === 0; up.title = 'Mover para cima';
+      const down = button('↓', 'btn btn-ghost cyl-sm', () => move(1)); down.disabled = idx === a.order.length - 1; down.title = 'Mover para baixo';
       actions.append(up, down);
       item.append(miniCurve(p.bands), info, actions);
       host.appendChild(item);
@@ -762,7 +762,7 @@
     const host = $('bd-list');
     host.textContent = '';
     const head = el('div', 'cyl-bind cyl-bind-head');
-    ['Categoria', 'Ação', 'Combinação', 'Estado', ''].forEach((t) => head.appendChild(el('span', null, t)));
+    ['Categoria', 'Ação', 'Combinação', 'Estado', 'Redefinir · Remover'].forEach((t) => head.appendChild(el('span', null, t)));
     host.appendChild(head);
     const actions = bindsView.actions;
     const save = (list) => guarded(() => api.setBinds(list)).then((v) => { if (v) { bindsView = v; renderBinds(); } });
@@ -800,9 +800,13 @@
 
       const tools = el('div', 'cyl-inline');
       tools.append(
-        button('Redefinir', 'btn btn-ghost', () => save(bindsView.binds.map((x) => (x.id === b.id ? { ...x, accelerator: DEFAULT_ACCEL[b.id] || '' } : x)))),
-        button('Remover', 'btn btn-ghost', () => save(bindsView.binds.filter((x) => x.id !== b.id))),
+        button('↺', 'btn btn-ghost cyl-sm', () => save(bindsView.binds.map((x) => (x.id === b.id ? { ...x, accelerator: DEFAULT_ACCEL[b.id] || '' } : x)))),
+        button('✕', 'btn btn-ghost cyl-sm', () => save(bindsView.binds.filter((x) => x.id !== b.id))),
       );
+      tools.children[0].title = 'Redefinir combinação';
+      tools.children[0].setAttribute('aria-label', 'Redefinir combinação');
+      tools.children[1].title = 'Remover bind';
+      tools.children[1].setAttribute('aria-label', 'Remover bind');
       row.appendChild(tools);
       host.appendChild(row);
       if (msg && b.enabled) {

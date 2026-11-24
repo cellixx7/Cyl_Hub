@@ -102,14 +102,19 @@ function applyLoginItem() {
   const devArgs = app.isPackaged ? [] : [app.getAppPath()];
   // Before the rename this app started with Windows as "Battery Hub" (its own Run entry, pointing
   // at this same folder). Remove only that entry, once, so the PC doesn't start two copies.
-  if (!store.getSetting('legacyLoginCleared')) {
+  // (getLoginItemSettings ignores `name` on Windows, so the Run value is read directly, and removed
+  // only when its command starts this very app — never an installed Battery Hub elsewhere.)
+  if (!store.getSetting('legacyLoginCleared2')) {
     try {
-      if (app.getLoginItemSettings({ name: 'Battery Hub', args: devArgs }).openAtLogin) {
+      const out = require('child_process').execFileSync('reg.exe', ['query', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run', '/v', 'Battery Hub'],
+        { encoding: 'utf8', windowsHide: true, timeout: 4000, stdio: ['ignore', 'pipe', 'ignore'] });
+      const mine = out.toLowerCase().includes(process.execPath.toLowerCase()) && (app.isPackaged || out.toLowerCase().includes(app.getAppPath().toLowerCase()));
+      if (mine) {
         app.setLoginItemSettings({ openAtLogin: false, name: 'Battery Hub', args: devArgs });
         logLine('INFO', 'removed the old "Battery Hub" startup entry of this app');
       }
-    } catch (_) {}
-    store.setSettings({ legacyLoginCleared: true });
+    } catch (_) { /* no such entry */ }
+    store.setSettings({ legacyLoginCleared2: true });
   }
   app.setLoginItemSettings({
     openAtLogin,
@@ -192,6 +197,24 @@ function roundWindowCorners(win) {
   } catch (_) {}
 }
 
+// Only the app's own window may use the microphone (the mic test and level meter); every other
+// permission a page could ask for is refused. Set up with the first window, not at startup:
+// touching session.defaultSession makes Chromium start a renderer process (~50 MB) even with no
+// window, which a tray app that starts hidden would carry for nothing.
+let permissionsSet = false;
+function setPermissions() {
+  if (permissionsSet) return;
+  permissionsSet = true;
+  session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => {
+    const own = (details.requestingUrl || '').startsWith('file://');
+    const audioOnly = permission === 'media' && (!details.mediaTypes || details.mediaTypes.every((t) => t === 'audio'));
+    cb(own && (audioOnly || permission === 'clipboard-sanitized-write'));
+  });
+  session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => (permission === 'media' || permission === 'clipboard-sanitized-write') && String(origin || '').startsWith('file://'));
+}
+
+app.on('browser-window-created', setPermissions); // covers the main window and the flyout
+
 function createWindow(forceShow) {
   const startMinimized = !forceShow && (store.getSetting('startMinimized') || process.argv.includes('--hidden'));
 
@@ -221,6 +244,23 @@ function createWindow(forceShow) {
     if (!startMinimized) mainWindow.show();
     if (process.env.CYL_BENCH) logLine('BENCH', `window ready-to-show ${Date.now() - BOOT_AT} ms after process start`);
   });
+  // Development only: CYL_SHOTS=<folder> saves a picture of each page, taken from this window's own
+  // compositor output (capturePage), so nothing else on screen can end up in it.
+  if (process.env.CYL_SHOTS) {
+    mainWindow.webContents.once('did-finish-load', async () => {
+      const wc = mainWindow.webContents;
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      await wait(2500);
+      for (const v of ['overview', 'dashboard', 'equalizer', 'mic', 'profiles', 'binds', 'settings']) {
+        await wc.executeJavaScript(`window.switchView(${JSON.stringify(v)})`);
+        await wait(1500);
+        const img = await wc.capturePage();
+        fs.mkdirSync(process.env.CYL_SHOTS, { recursive: true });
+        fs.writeFileSync(path.join(process.env.CYL_SHOTS, `${v}.png`), img.toPNG());
+      }
+      logLine('BENCH', 'screenshots written');
+    });
+  }
   mainWindow.webContents.on('did-finish-load', () => {
   });
   mainWindow.on('closed', () => { mainWindow = null; });
@@ -273,14 +313,6 @@ app.whenReady().then(() => {
   logLine('INFO', `app ready (v${app.getVersion()}) — logging to ${LOG_FILE}`);
   applyTheme();
   applyLoginItem();
-  // Only the app's own window may use the microphone (the mic test and level meter); every other
-  // permission a page could ask for is refused.
-  session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => {
-    const own = (details.requestingUrl || '').startsWith('file://');
-    const audioOnly = permission === 'media' && (!details.mediaTypes || details.mediaTypes.every((t) => t === 'audio'));
-    cb(own && (audioOnly || permission === 'clipboard-sanitized-write'));
-  });
-  session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => (permission === 'media' || permission === 'clipboard-sanitized-write') && String(origin || '').startsWith('file://'));
 
   const ctx = cyl.init({
     log: logLine,
@@ -305,6 +337,15 @@ app.whenReady().then(() => {
   if (!startHidden) createWindow(true);
   flyout.prepare(roundWindowCorners);
   if (process.env.CYL_BENCH) logLine('BENCH', `app ready ${Date.now() - BOOT_AT} ms after process start`);
+  if (process.env.CYL_BENCH) {
+    setTimeout(() => {
+      const { webContents } = require('electron');
+      logLine('BENCH', `webContents alive: ${webContents.getAllWebContents().map((w) => `${w.id}:${w.getType()}:${w.getURL().split('/').pop()}`).join(', ') || 'none'}`);
+    }, 8000);
+  }
+  if (process.env.CYL_SELFTEST) {
+    setTimeout(() => require('./selftest').run({ ctx, log: logLine, showWindow, getWindow: () => mainWindow, quit: quitApp }), 4000);
+  }
   poller.setCardsChangedHandler((droppedId) => {
     if (droppedId) {
       notifier.reset(droppedId);

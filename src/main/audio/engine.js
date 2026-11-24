@@ -94,7 +94,7 @@ function createEngine({ exe = enginePath(), log = () => {}, spawnFn = spawn } = 
 
   const pct = (n) => {
     const v = Number(n);
-    if (!Number.isFinite(v) || value === '' || value === null) throw new Error('volume inválido');
+    if (n === '' || n === null || !Number.isFinite(v)) throw new Error('volume inválido');
     return String(Math.max(0, Math.min(100, Math.round(v * 10) / 10)));
   };
 

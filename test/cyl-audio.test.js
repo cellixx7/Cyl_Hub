@@ -299,6 +299,31 @@ test('engine client refuses arguments that could break the line protocol', async
   await assert.rejects(() => e.setVolume('x', 'abc'), /inválido/);
 });
 
+test('engine client sends a valid volume as a clamped number on one protocol line', async () => {
+  const { PassThrough } = require('stream');
+  const { EventEmitter } = require('events');
+  const lines = [];
+  const spawnFn = () => {
+    const c = new EventEmitter();
+    c.stdout = new PassThrough();
+    c.stdin = new PassThrough();
+    c.stdin.on('data', (d) => {
+      for (const l of String(d).split('\n').filter(Boolean)) {
+        lines.push(l);
+        c.stdout.write(`{"id":"${l.split('\t')[0]}","ok":true}\n`);
+      }
+    });
+    c.kill = () => {};
+    return c;
+  };
+  const e = createEngine({ exe: 'fake.exe', spawnFn });
+  await e.setVolume('dev', 55.55);
+  await e.setVolume('dev', 140);
+  await e.setVolume('dev', 0);
+  assert.deepEqual(lines.map((l) => l.split('\t').slice(1)), [['volume', 'dev', '55.6'], ['volume', 'dev', '100'], ['volume', 'dev', '0']]);
+  e.stop();
+});
+
 test('engine client reports a missing AudioEngine.exe clearly', async () => {
   const e = createEngine({ exe: null });
   assert.equal(e.available(), false);
