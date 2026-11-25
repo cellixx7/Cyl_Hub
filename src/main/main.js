@@ -216,7 +216,9 @@ function setPermissions() {
 app.on('browser-window-created', setPermissions); // covers the main window and the flyout
 
 function createWindow(forceShow) {
-  const startMinimized = !forceShow && (store.getSetting('startMinimized') || process.argv.includes('--hidden'));
+  // "Iniciar minimizado" only applies to the start with Windows, which passes --hidden (see
+  // applyLoginItem). Opening the app from its shortcut always shows the window.
+  const startMinimized = !forceShow && process.argv.includes('--hidden');
 
   mainWindow = new BrowserWindow({
     width: 960,
@@ -340,8 +342,7 @@ app.whenReady().then(() => {
   tray.setMode(store.getSetting('trayMode'));
   ctx.audio.events.on('changed', () => tray.refreshMain());
   // Started hidden, there is no window until it is opened from the tray icon, which always exists.
-  const startHidden = !process.argv.includes('--show')
-    && (store.getSetting('startMinimized') || process.argv.includes('--hidden'));
+  const startHidden = !process.argv.includes('--show') && process.argv.includes('--hidden');
   if (!startHidden) createWindow(true);
   flyout.prepare(roundWindowCorners);
   if (process.env.CYL_BENCH) logLine('BENCH', `app ready ${Date.now() - BOOT_AT} ms after process start`);
