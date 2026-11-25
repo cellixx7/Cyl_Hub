@@ -10,7 +10,7 @@ const { execFile } = require('child_process');
 const packageCheck = require('./package-check');
 const { PY_CANDIDATES } = require('./monitor');
 
-const REPO = 'battery-hub/battery-hub';
+const REPO = 'cellixx7/Cyl_Hub';
 const LATEST_RELEASE = `https://api.github.com/repos/${REPO}/releases/latest`;
 const ISSUE_SEARCH = 'https://api.github.com/search/issues';
 const NETWORK_TIMEOUT_MS = 5000;
@@ -79,6 +79,7 @@ async function checkPackage(root, packaged) {
 }
 
 async function checkVersion(current, fetchLatest) {
+  if (!fetchLatest) return check('version', 'Version', 'ok', `You have ${current}. Online version check is off: the app makes no network calls.`);
   try {
     const latest = await fetchLatest();
     if (isNewer(latest, current)) {
@@ -349,7 +350,7 @@ async function reportGate(deps, checks, vendor, product, notSent) {
   if (version && version.status === 'fail') return { kind: 'outdated', detail: version.detail };
   if (!product) return null;
   const key = `${vendor}:${product}`;
-  const existing = await findExistingReport(deps.fetcher, vendor, product).catch(() => null);
+  const existing = deps.fetcher ? await findExistingReport(deps.fetcher, vendor, product).catch(() => null) : null;
   if (existing) return { kind: 'known', ...existing };
   const sentAt = (deps.reported || {})[key];
   if (sentAt && !notSent) return { kind: 'sent', sentAt, url: `https://github.com/${REPO}/issues?q=${encodeURIComponent(`"VID_${vendor}" "PID_${product}"`)}` };
@@ -428,7 +429,7 @@ async function runChecks(deps) {
   const errors = readLog(deps.logFile);
   const checks = [
     await checkPackage(deps.root, deps.packaged),
-    await checkVersion(deps.version, () => fetchLatestVersion(deps.fetcher)),
+    await checkVersion(deps.version, deps.fetcher ? () => fetchLatestVersion(deps.fetcher) : null),
     checkStorage(deps.userData),
     await checkDeviceReader(deps.enumerate),
     await checkWindowsAccess(deps.windowsSelfTest),

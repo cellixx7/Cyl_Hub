@@ -52,6 +52,24 @@ async function run({ ctx, log, showWindow, getWindow, quit }) {
     check('2.4 GHz receiver seen over HID', h.dongle === true);
     check('battery shown as unavailable, not invented', h.battery.kind === 'unavailable' && h.battery.label === 'Indisponível');
 
+    // ---- wireless mouse + passive listening (read-only) ----
+    const hidClient = require('./hid/hid-client');
+    const mouse = (hid || []).find((d) => d.vendorId === 0x1d57 && d.productId === 0xfa60);
+    check('wireless mouse receiver found (1d57:fa60)', !!mouse, mouse && `${mouse.manufacturer} ${mouse.product}`);
+    const saved = Object.values(store.getDevices()).find((d) => mouse && d.id === mouse.id);
+    check('mouse battery is a fresh real reading', !!(saved && saved.lastReading && Date.now() - saved.lastReadingAt < 10 * 60000), saved && saved.lastReading ? `${saved.lastReading.capacity}% (driver ${saved.driverId})` : 'no reading');
+    if (mouse) {
+      const l = await hidClient.listen(mouse, 4000);
+      const beken = require('./hid/drivers/beken');
+      const parsed = l.frames.map((f) => beken.parseFrame(Buffer.from(f.hex, 'hex'))).filter(Boolean);
+      check('passive listen hears the mouse broadcast', parsed.length > 0, parsed.length ? `${parsed[0].capacity}%${parsed[0].charging ? ' charging' : ''}, ${l.frames.length} frames` : l.errors.join('; '));
+    }
+    const h510 = (hid || []).find((d) => d.vendorId === 0x040b && d.productId === 0x0897);
+    if (h510) {
+      const l = await hidClient.listen(h510, 4000);
+      check('passive listen on the H510-PRO runs without writing', Array.isArray(l.frames), `${l.frames.length} frames, ${l.channels.length} channel(s)${l.errors.length ? `, ${l.errors.join('; ')}` : ''}`);
+    }
+
     // ---- microphone mute (put back afterwards) ----
     if (t.capture) {
       micBefore = t.capture.mute;

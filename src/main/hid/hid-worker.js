@@ -7,6 +7,9 @@
 const { listLogicalDevices } = require('./catalog');
 const { driverById } = require('./drivers');
 const { capture } = require('./inspector');
+const passive = require('./passive');
+// Receivers whose protocol is unknown never get the scan's output pings (blind writes).
+const NO_WRITES = new Set(['1035:2199']); // 040b:0897 Redragon H510-PRO
 
 async function handle(id, cmd, args) {
   if (cmd === 'enumerate') return listLogicalDevices();
@@ -16,8 +19,11 @@ async function handle(id, cmd, args) {
   }
   if (cmd === 'identify') return driverById(args[0]).identify(args[1]);
   if (cmd === 'capture') {
-    return capture(args[0], { onProgress: (frames) => process.parentPort.postMessage({ id, progress: frames }) });
+    const d = args[0];
+    const pingOutputs = !NO_WRITES.has(`${d.vendorId}:${d.productId}`);
+    return capture(d, { pingOutputs, onProgress: (frames) => process.parentPort.postMessage({ id, progress: frames }) });
   }
+  if (cmd === 'listen') return passive.listen(args[0], args[1]);
   throw new Error(`unknown hid command: ${cmd}`);
 }
 

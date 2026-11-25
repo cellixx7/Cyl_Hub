@@ -89,6 +89,7 @@ module.exports = {
   // open on every channel of the device, and only ending the process releases them safely
   // (see session.js), so the worker is recycled afterwards.
   // If node-hid crashes the worker mid-scan, show what it had found up to then.
+  listen: (device, ms) => call('listen', [device, ms], 20000),
   capture: (device) => {
     let seen = [];
     return call('capture', [device], 45000, (frames) => { seen = frames; })

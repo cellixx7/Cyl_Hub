@@ -15,6 +15,8 @@ const { createAutoSwitch } = require('./audio/autoswitch');
 const model = require('./audio/model');
 const kbModel = require('./keybinds/model');
 const { createKeybinds } = require('./keybinds/manager');
+const devdiag = require('./devdiag');
+const os = require('os');
 
 const ICON = path.join(__dirname, '..', '..', 'assets', 'icon.png');
 const MAX_IMPORT_BYTES = 512 * 1024;
@@ -107,6 +109,49 @@ function init({ log, getWindow, toggleWindow, showWindow, showSettings, hidClien
     let hidList = null;
     if (opts && opts.hid) hidList = await hidClient.enumerate().catch(() => null);
     return audio.snapshot({ hidList, savedDevices: store.getDevices() });
+  });
+  // ---- device diagnostics (Dispositivos > Diagnóstico) ----
+  let lastReport = '';
+  let listenBusy = false;
+  const diagEntries = async () => {
+    await audio.refresh(false);
+    const hidList = await hidClient.enumerate().catch(() => null);
+    const { detectDriver } = require('./hid/drivers');
+    const entries = devdiag.collect({
+      hidList, saved: store.getDevices(), headset: audio.headset({ hidList, savedDevices: store.getDevices() }),
+      pollSec: store.getSetting('pollIntervalSec') || 60, detectDriver: (d) => { try { return detectDriver(d); } catch (_) { return null; } },
+    });
+    return { entries, hidList };
+  };
+  const apoLine = () => { const w = apo.info(false); return w ? `instalado${w.version ? ` (versão ${w.version})` : ''}` : 'não instalado'; };
+  handle('cyl:diag', async () => (await diagEntries()).entries);
+  handle('cyl:diag-report', async (opts) => {
+    const { entries, hidList } = await diagEntries();
+    let listen = null;
+    const key = opts && typeof opts.listen === 'string' ? opts.listen : null;
+    if (key) {
+      if (listenBusy) throw new Error('Uma escuta já está em andamento.');
+      const target = key === 'h510'
+        ? (hidList || []).find((d) => d.vendorId === 0x040b && d.productId === 0x0897)
+        : (hidList || []).find((d) => d.id === key);
+      if (!target) throw new Error('Dispositivo não conectado.');
+      listenBusy = true;
+      try {
+        listen = { name: target.product, ...(await hidClient.listen(target, 8000)) };
+      } finally { listenBusy = false; }
+    }
+    lastReport = devdiag.report({ entries, version: app.getVersion(), windows: os.release(), apo: apoLine(), listen });
+    return lastReport;
+  });
+  handle('cyl:diag-export', async () => {
+    if (!lastReport) throw new Error('Gere o relatório primeiro.');
+    const res = await dialog.showSaveDialog(getWindow(), {
+      title: 'Exportar relatório de dispositivos', defaultPath: 'cyl-audio-hub-dispositivos.txt',
+      filters: [{ name: 'Texto', extensions: ['txt'] }],
+    });
+    if (res.canceled || !res.filePath) return { canceled: true };
+    fs.writeFileSync(res.filePath, lastReport, 'utf8');
+    return { file: res.filePath };
   });
   handle('cyl:apo-status', async () => {
     const t = audio.targets();

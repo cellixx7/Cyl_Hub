@@ -88,6 +88,9 @@ contextBridge.exposeInMainWorld('cyl', {
   resetBinds: call('cyl:binds-reset'),
   checkBind: call('cyl:binds-check'),
   suspendBinds: call('cyl:binds-suspend'),
+  diag: call('cyl:diag'),
+  diagReport: call('cyl:diag-report'),
+  diagExport: call('cyl:diag-export'),
   onChanged: (cb) => {
     const l = () => cb();
     ipcRenderer.on('cyl-changed', l);
