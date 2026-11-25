@@ -45,7 +45,10 @@ function locate({ env = process.env, exists = fs.existsSync, reg = regValue } = 
   ].filter(Boolean);
   const configDir = candidates.find((d) => exists(path.join(d, 'config.txt')));
   if (!configDir) return null;
-  return { configDir, installDir: path.dirname(configDir), configurator: path.join(path.dirname(configDir), 'Configurator.exe') };
+  // 1.4 renamed Configurator.exe to DeviceSelector.exe; older installs still have the old name.
+  const installDir = path.dirname(configDir);
+  const configurator = ['DeviceSelector.exe', 'Configurator.exe'].map((n) => path.join(installDir, n)).find((f) => fs.existsSync(f)) || path.join(installDir, 'DeviceSelector.exe');
+  return { configDir, installDir, configurator };
 }
 
 // Whether APO is installed on one endpoint (chosen in APO's Configurator). Reads the endpoint's
@@ -105,14 +108,25 @@ function render({ enabled, profile, renderId, captureId }) {
 
 // ---- file operations ----
 
-function atomicWrite(file, text) {
+// Equalizer APO (inside the Windows audio service) opens a config file to reload it right after it
+// changes, and a rename over a file that is open there fails with EPERM/EBUSY for a moment. So the
+// rename is retried briefly; if the file stays busy, it is overwritten in place (APO then simply
+// reloads it once more). The temporary file never stays behind.
+const BUSY = new Set(['EPERM', 'EBUSY', 'EACCES']);
+const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+function atomicWrite(file, text, { tries = 8, waitMs = 40 } = {}) {
   const tmp = `${file}.cyl-tmp-${process.pid}`;
   fs.writeFileSync(tmp, text, 'utf8');
   try {
-    fs.renameSync(tmp, file);
-  } catch (e) {
+    for (let i = 0; ; i++) {
+      try { fs.renameSync(tmp, file); return; } catch (e) {
+        if (!BUSY.has(e.code) || !fs.existsSync(file)) throw e;
+        if (i >= tries) { fs.writeFileSync(file, text, 'utf8'); return; }
+        pause(waitMs);
+      }
+    }
+  } finally {
     try { fs.unlinkSync(tmp); } catch (_) {}
-    throw e;
   }
 }
 
