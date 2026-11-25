@@ -193,8 +193,13 @@
       const name = el('span', null, d.customName || d.product || 'Dispositivo');
       name.setAttribute('data-no-translate', '');
       const r = d.lastReading;
-      const value = d.online === false || !r ? 'sem leitura' : `${r.capacity}%${r.charging ? ' · carregando' : ''}`;
-      row.append(name, el('strong', null, value));
+      const live = d.online !== false && r && r.capacity != null && d.lastReadingAt && Date.now() - d.lastReadingAt < 15 * 60000;
+      const value = live ? `${r.capacity}%${r.charging ? ' · carregando' : ''}` : 'sem leitura atual';
+      const ago = d.lastReadingAt ? Math.round((Date.now() - d.lastReadingAt) / 60000) : null;
+      const sub = live ? 'Leitura real' : d.online === false ? `Desligado ou fora de alcance${r ? ` · última: ${r.capacity}% ${ago < 60 ? `há ${ago} min` : `há ${Math.round(ago / 60)} h`}` : ''}` : 'Aguardando leitura';
+      const left = el('div', 'cyl-mini-name');
+      left.append(name, el('span', `cyl-mini-sub${live ? ' ok' : ''}`, sub));
+      row.append(left, el('strong', live ? null : 'cyl-muted', value));
       host.appendChild(row);
     }
   }
@@ -243,6 +248,73 @@
     }
   }
   $('add-device-btn').addEventListener('click', () => window.switchView('discover'));
+
+  // ---------- Dispositivos: diagnóstico ----------
+
+  const KIND_TXT = { real: 'Leitura real', estimate: 'Estimativa', unavailable: 'Indisponível' };
+  let diagOpen = false;
+  let reportText = '';
+  async function renderDiag() {
+    const host = $('diag-list');
+    let entries;
+    try { entries = await api.diag(); } catch (e) { host.textContent = ''; host.appendChild(el('p', 'cyl-muted cyl-pad', plain(e))); return; }
+    host.textContent = '';
+    for (const e of entries) {
+      const box = document.createElement('details');
+      box.className = 'cyl-diag';
+      const sum = document.createElement('summary');
+      const left = el('div', 'settings-label');
+      const t = el('span', 'settings-title', e.name);
+      t.setAttribute('data-no-translate', '');
+      left.append(t, el('span', 'settings-hint', `${e.kind} · ${e.connection} · ${e.state}`));
+      const right = el('div', 'cyl-inline');
+      right.append(el('span', `cyl-kind cyl-kind-${e.battery.kind}`, e.battery.label === KIND_TXT[e.battery.kind] ? '' : (KIND_TXT[e.battery.kind] || '')), el('strong', 'cyl-diag-val', e.battery.label + (e.battery.charging ? ' · carregando' : '')));
+      sum.append(left, right);
+      const dl = el('dl', 'cyl-dl');
+      const add = (k, v) => { if (!v) return; dl.append(el('dt', null, k), el('dd', null, v)); };
+      add('Produto', e.product);
+      add('Identificação', e.ids);
+      add('Fonte da bateria', e.source);
+      add('Última leitura', e.lastReadingAt ? `${new Date(e.lastReadingAt).toLocaleString('pt-BR')} (${e.lastReadingAgo})` : 'nenhuma');
+      if (e.battery.last) add('Última carga conhecida', `${e.battery.last} (não é uma leitura atual)`);
+      add('Histórico', e.history ? `${e.history} pontos` : '');
+      add('Motivo', e.reason);
+      add('Interfaces HID', e.interfaces.join('; '));
+      box.append(sum, dl);
+      host.appendChild(box);
+    }
+  }
+  const plain = (e) => String((e && e.message) || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+  $('diag-open').addEventListener('click', () => {
+    diagOpen = !diagOpen;
+    $('diag-body').hidden = !diagOpen;
+    $('diag-open').textContent = diagOpen ? 'Fechar diagnóstico' : 'Abrir diagnóstico';
+    $('diag-open').setAttribute('aria-expanded', String(diagOpen));
+    if (diagOpen) renderDiag();
+  });
+  async function makeReport(listen) {
+    const b1 = $('diag-report'), b2 = $('diag-listen');
+    b1.disabled = b2.disabled = true;
+    const label = listen ? b2.textContent : null;
+    if (listen) b2.textContent = 'Escutando 8 s…';
+    try {
+      reportText = await api.diagReport(listen ? { listen: 'h510' } : {});
+      $('diag-text').textContent = reportText;
+      $('diag-text').hidden = false;
+      $('diag-copy').disabled = $('diag-export').disabled = false;
+      renderDiag();
+    } catch (e) { toast(plain(e), 'error'); }
+    finally { b1.disabled = b2.disabled = false; if (label) b2.textContent = label; }
+  }
+  $('diag-report').addEventListener('click', () => makeReport(false));
+  $('diag-listen').addEventListener('click', () => makeReport(true));
+  $('diag-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(reportText); toast('Relatório copiado.'); } catch (e) { toast('Não foi possível copiar.', 'error'); }
+  });
+  $('diag-export').addEventListener('click', () => guarded(async () => {
+    const r = await api.diagExport();
+    if (r && r.file) toast('Relatório exportado.');
+  }));
 
   // ---------- Equalizador ----------
 

@@ -12,7 +12,8 @@
     "predist": "node scripts/build-batteries.js",
     "dist": "electron-builder",
     "installer": "node scripts/build-installer.js",
-    "bench": "node scripts/bench.js"
+    "bench": "node scripts/bench.js",
+    "brand": "node scripts/build-brand.js"
   },
   "dependencies": {
     "electron-store": "^8.2.0",
@@ -34,7 +35,10 @@
       "!**/node_modules/node-hid/hidapi/**",
       "!**/node_modules/node-hid/src/**",
       "!**/node_modules/node-hid/prebuilds/!(HID-win32-x64)/**",
-      "native/AudioEngine.exe"
+      "native/AudioEngine.exe",
+      "!src/imgs/**",
+      "!assets/brand/**",
+      "!assets/tray/mood-*"
     ],
     "afterPack": "scripts/after-pack.js",
     "electronLanguages": [

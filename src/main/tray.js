@@ -1,6 +1,5 @@
 const { Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
-const { moodFor } = require('./mood');
 const { tr } = require('./lang');
 
 // CYL Audio Hub's tray. There is always exactly one main icon: left click opens the window, right
@@ -13,7 +12,9 @@ const { tr } = require('./lang');
 // Windows' shell COM layer (combase.dll). Here we just load the matching file for a Tray.
 
 const TRAY_DIR = path.join(__dirname, '..', '..', 'assets', 'tray');
-const APP_ICON = path.join(__dirname, '..', '..', 'assets', 'icon.png');
+// The CYL tile from src/imgs/icon_bandeja.png (scripts/build-brand.js); Electron picks cyl@2x.png
+// by itself on 200 % displays.
+const APP_ICON = path.join(TRAY_DIR, 'cyl.png');
 
 let handlers = { open: () => {}, quit: () => {}, flyout: () => {}, menu: null, tooltip: null };
 let mode = 'list';
@@ -32,7 +33,6 @@ function cached(file) {
   let img = imageCache.get(file);
   if (!img) {
     img = nativeImage.createFromPath(file);
-    if (file === APP_ICON) img = img.resize({ width: 16, height: 16, quality: 'best' });
     imageCache.set(file, img);
   }
   return img;
@@ -81,13 +81,12 @@ async function popMenu(tray) {
   }
 }
 
-// Picture and tooltip of the main icon. In the single-icon layout its face follows the battery
-// that most needs attention; with no battery devices it is the app icon.
+// Picture and tooltip of the main icon: always the CYL icon; the batteries are listed in the
+// tooltip (and, optionally, as extra per-device icons).
 function renderMain() {
   if (!mainTray) return;
   const all = list();
-  const useMood = mode === 'list' && all.length > 0;
-  const file = useMood ? path.join(TRAY_DIR, `mood-${moodFor(all)}.png`) : APP_ICON;
+  const file = APP_ICON;
   const head = handlers.tooltip ? handlers.tooltip() : 'CYL Audio Hub';
   const tip = [head, ...(mode === 'list' ? all.map((d) => `${d.name}: ${statusText(d)}`) : [])].join('\n').slice(0, 127);
   const key = `${file}|${tip}`;

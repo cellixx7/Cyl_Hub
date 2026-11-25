@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, net, session } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeTheme, Menu, shell, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const BOOT_AT = Date.now();
@@ -88,7 +88,7 @@ if (!gotLock) {
 }
 app.on('second-instance', () => { if (app.isReady()) showWindow(); }); // a window can't be built before 'ready'
 
-const windowColor = () => (nativeTheme.shouldUseDarkColors ? '#0f1020' : '#eef0fb');
+const windowColor = () => (nativeTheme.shouldUseDarkColors ? '#120a1d' : '#f4eefc');
 
 function applyTheme() {
   const theme = store.getSetting('theme') || 'system';
@@ -258,6 +258,9 @@ function createWindow(forceShow) {
         fs.mkdirSync(process.env.CYL_SHOTS, { recursive: true });
         fs.writeFileSync(path.join(process.env.CYL_SHOTS, `${v}.png`), img.toPNG());
       }
+      await wc.executeJavaScript("window.switchView('dashboard'); document.getElementById('diag-open').click(); setTimeout(() => { const d = document.querySelector('.cyl-diag'); if (d) d.open = true; document.getElementById('diag-panel').scrollIntoView(); }, 1200)");
+      await wait(3000);
+      fs.writeFileSync(path.join(process.env.CYL_SHOTS, 'diag.png'), (await wc.capturePage()).toPNG());
       logLine('BENCH', 'screenshots written');
     });
   }
@@ -496,7 +499,7 @@ const supportDeps = () => ({
   version: app.getVersion(),
   userData: app.getPath('userData'),
   logFile: LOG_FILE,
-  fetcher: net.fetch,
+  fetcher: null, // offline: CYL Audio Hub makes no network calls
   enumerate: hidClient.enumerate,
   windowsSelfTest: system.selfTest,
   devices: store.getDevices(),

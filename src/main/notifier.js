@@ -4,8 +4,8 @@ const store = require('./store');
 const { tr } = require('./lang');
 
 const ICON = path.join(__dirname, '..', '..', 'assets', 'icon.png');
-const LOW_ICON = path.join(__dirname, '..', '..', 'assets', 'brand', 'mood-low.png');
-const CHARGING_ICON = path.join(__dirname, '..', '..', 'assets', 'brand', 'mood-charge.png');
+const LOW_ICON = path.join(__dirname, '..', '..', 'assets', 'icon.png'); // CYL logo (scripts/build-brand.js)
+const CHARGING_ICON = LOW_ICON;
 const CHARGING_QUIET_MS = 5 * 60000; // a loose cable must not turn into a stream of alerts
 const LOW_RECOVER = 5; // points above the alert level a battery must reach before it can alert again
 

@@ -9,7 +9,7 @@
 <body>
   <div class="app">
     <div class="titlebar">
-      <div class="titlebar-title"><img src="app-icon.png" width="16" height="16" alt="" draggable="false" />CYL Audio Hub</div>
+      <div class="titlebar-title"><img src="brand/cyl-mark.png" width="18" height="18" alt="" draggable="false" />CYL Audio Hub</div>
       <div class="window-controls">
         <button class="wc-btn wc-min" id="win-min" title="Minimize" tabindex="-1">
           <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="4.5" width="8" height="1" rx="0.5"/></svg>
@@ -157,9 +157,37 @@
             <button class="link-btn" id="hidden-toggle">Show</button>
           </div>
           <div class="empty-state" id="dashboard-empty" hidden>
-            <img class="empty-icon" src="watcher.png" width="96" height="96" alt="" draggable="false" />
+            <img class="empty-icon" src="brand/cyl-logo.png" width="96" height="96" alt="" draggable="false" />
             <p class="empty-title">No devices yet</p>
             <p class="empty-desc">Go to <b>Add device</b> to start monitoring.</p>
+          </div>
+          <div class="settings-group-title cyl-diag-head">
+            <span>Diagnóstico</span>
+          </div>
+          <div class="settings-panel" id="diag-panel">
+            <div class="settings-row">
+              <div class="settings-label">
+                <span class="settings-title">Diagnóstico de dispositivos</span>
+                <span class="settings-hint">Conexão, estado, fonte da bateria e última leitura de cada periférico. Nada sai do computador.</span>
+              </div>
+              <button class="btn btn-ghost" id="diag-open" aria-expanded="false">Abrir diagnóstico</button>
+            </div>
+            <div id="diag-body" hidden>
+              <div id="diag-list"></div>
+              <div class="settings-row cyl-diag-actions">
+                <div class="settings-label">
+                  <span class="settings-title">Relatório técnico</span>
+                  <span class="settings-hint">Texto local sem números de série, endereços ou caminhos. A escuta passiva só lê o que o H510-PRO envia sozinho por 8 s; nada é enviado a ele.</span>
+                </div>
+                <div class="cyl-inline">
+                  <button class="btn btn-ghost" id="diag-report">Gerar</button>
+                  <button class="btn btn-ghost" id="diag-listen">Gerar com escuta passiva</button>
+                  <button class="btn btn-ghost" id="diag-copy" disabled>Copiar</button>
+                  <button class="btn btn-ghost" id="diag-export" disabled>Exportar</button>
+                </div>
+              </div>
+              <pre class="cyl-report" id="diag-text" hidden tabindex="0"></pre>
+            </div>
           </div>
         </section>
 
@@ -585,7 +613,7 @@
           <div class="settings-group-title">About</div>
           <div class="settings-panel">
             <div class="settings-row">
-              <img class="about-icon" src="watcher.png" width="56" height="56" alt="" draggable="false" />
+              <img class="about-icon" src="brand/cyl-logo.png" width="64" height="64" alt="" draggable="false" />
               <div class="settings-label">
                 <span class="settings-title">CYL Audio Hub</span>
                 <span class="settings-hint" id="app-version">Version</span>

@@ -31,7 +31,7 @@ test('low battery fires once per crossing, and again after recovering', () => {
   [50, 20, 15, 10].forEach((c) => notifier.check(device(c)));
   assert.deepEqual(sent.map((n) => n.title), ['Low battery']);
   assert.match(sent[0].body, /Mouse is at 20%/);
-  assert.match(sent[0].icon, /mood-low\.png$/);
+  assert.match(sent[0].icon, /assets[\\/]icon\.png$/);
   notifier.check(device(60));
   notifier.check(device(18));
   assert.equal(sent.length, 2);
@@ -64,7 +64,7 @@ test('charging fires when charging starts, only if enabled', () => {
   notifier.check(device(40));
   notifier.check(device(40, true));
   assert.deepEqual(sent.map((n) => n.title), ['Charging']);
-  assert.match(sent[0].icon, /mood-charge\.png$/);
+  assert.match(sent[0].icon, /assets[\\/]icon\.png$/);
   notifier.reset('d');
   sent.length = 0;
   settings.notifyCharging = false;
