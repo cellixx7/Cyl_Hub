@@ -1179,3 +1179,4 @@ body.reduce-motion .cyl-toast { animation: none; }
   .cyl-dl { grid-template-columns: 1fr; }
   .cyl-diag > summary { flex-wrap: wrap; }
 }
+.cyl-mini-row > strong { white-space: nowrap; }

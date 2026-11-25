@@ -261,6 +261,11 @@ function createWindow(forceShow) {
       await wc.executeJavaScript("window.switchView('dashboard'); document.getElementById('diag-open').click(); setTimeout(() => { const d = document.querySelector('.cyl-diag'); if (d) d.open = true; document.getElementById('diag-panel').scrollIntoView(); }, 1200)");
       await wait(3000);
       fs.writeFileSync(path.join(process.env.CYL_SHOTS, 'diag.png'), (await wc.capturePage()).toPNG());
+      nativeTheme.themeSource = 'light';
+      await wc.executeJavaScript("window.switchView('overview')");
+      await wait(1500);
+      fs.writeFileSync(path.join(process.env.CYL_SHOTS, 'overview-light.png'), (await wc.capturePage()).toPNG());
+      applyTheme();
       logLine('BENCH', 'screenshots written');
     });
   }

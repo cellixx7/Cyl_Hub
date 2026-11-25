@@ -1,6 +1,6 @@
 {
   "name": "cyl-audio-hub",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Bateria, equalizador (Equalizer APO), perfis, microfone e binds globais para o Redragon H510-PRO e outros periféricos",
   "author": "Marcelo Vaz Oliveira (CylVersion), baseado no Battery Hub e no Zeus Pro Suite",
   "main": "src/main/main.js",
